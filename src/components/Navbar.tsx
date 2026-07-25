@@ -75,7 +75,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 shadow-sm border-b border-gray-100 dark:border-gray-800 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Left: Website Logo/Name */}
+          {/* Left: Website Logo/Name strictly redirecting to "/" */}
           <div className="flex-shrink-0 flex items-center">
             <Link
               href="/"
@@ -209,12 +209,14 @@ export default function Navbar() {
             )}
 
             {/* Special Button: Join as Developer */}
-            <Link
-              href="#"
-              className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-lg shadow-sm transition transform hover:-translate-y-0.5"
+            <a
+              href="https://github.com/abrar12678/crowd-funding-client"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-lg shadow-sm transition transform hover:-translate-y-0.5 inline-block"
             >
               Join as Developer
-            </Link>
+            </a>
           </div>
 
           {/* Mobile Hamburger Menu Toggle */}
@@ -310,13 +312,15 @@ export default function Navbar() {
             </>
           )}
 
-          <Link
-            href="#"
+          <a
+            href="https://github.com/abrar12678/crowd-funding-client"
+            target="_blank"
+            rel="noopener noreferrer"
             onClick={() => setIsMobileMenuOpen(false)}
             className="block text-center w-full py-2.5 px-4 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg shadow-sm transition"
           >
             Join as Developer
-          </Link>
+          </a>
         </div>
       )}
     </header>
