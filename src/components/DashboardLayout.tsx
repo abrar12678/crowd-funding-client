@@ -1,0 +1,190 @@
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+
+interface NavItem {
+  label: string;
+  href: string;
+  icon?: string;
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const pathname = usePathname();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Dynamic Navigation Links based on User Role
+  let navItems: NavItem[] = [];
+
+  if (user?.role === 'Supporter') {
+    navItems = [
+      { label: 'Home', href: '/dashboard', icon: '🏠' },
+      { label: 'Explore Campaigns', href: '/dashboard/explore-campaigns', icon: '🔍' },
+      { label: 'My Contributions', href: '/dashboard/my-contributions', icon: '🤝' },
+      { label: 'Purchase Credit', href: '/dashboard/purchase-credit', icon: '💳' },
+      { label: 'Payment History', href: '/dashboard/payment-history', icon: '📜' },
+    ];
+  } else if (user?.role === 'Creator') {
+    navItems = [
+      { label: 'Home', href: '/dashboard', icon: '🏠' },
+      { label: 'Add New Campaign', href: '/dashboard/add-campaign', icon: '➕' },
+      { label: 'My Campaigns', href: '/dashboard/my-campaigns', icon: '🚀' },
+      { label: 'Withdrawals', href: '/dashboard/withdrawals', icon: '🏦' },
+      { label: 'Payment History', href: '/dashboard/payment-history', icon: '📜' },
+    ];
+  } else if (user?.role === 'Admin') {
+    navItems = [
+      { label: 'Home', href: '/dashboard', icon: '🏠' },
+      { label: 'Manage Users', href: '/dashboard/manage-users', icon: '👥' },
+      { label: 'Manage Campaigns', href: '/dashboard/manage-campaigns', icon: '📋' },
+      { label: 'Campaign Approvals', href: '/dashboard/campaign-approvals', icon: '✅' },
+      { label: 'Withdrawal Requests', href: '/dashboard/withdrawal-requests', icon: '💸' },
+      { label: 'Reports', href: '/dashboard/reports', icon: '📊' },
+    ];
+  } else {
+    navItems = [
+      { label: 'Home', href: '/dashboard', icon: '🏠' },
+      { label: 'Explore Campaigns', href: '/dashboard/explore-campaigns', icon: '🔍' },
+    ];
+  }
+
+  return (
+    <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      {/* Mobile Backdrop Overlay */}
+      {isSidebarOpen && (
+        <div
+          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
+        />
+      )}
+
+      {/* Dark Sidebar Component */}
+      <aside
+        className={`fixed md:sticky top-0 left-0 z-50 h-screen w-64 bg-slate-900 text-white flex flex-col justify-between transition-transform duration-300 ease-in-out border-r border-slate-800 ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
+        <div className="p-5 flex-1 overflow-y-auto">
+          {/* Top Brand Logo */}
+          <div className="flex items-center justify-between pb-6 border-b border-slate-800 mb-6">
+            <Link href="/" className="text-xl font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+              FundVerse
+            </Link>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-medium border border-slate-700">
+              {user?.role || 'Guest'}
+            </span>
+          </div>
+
+          {/* Role-based Dynamic Navigation Links */}
+          <nav className="space-y-1.5">
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">
+              Menu Navigation
+            </div>
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsSidebarOpen(false)}
+                  className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition ${
+                    isActive
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <span className="text-base">{item.icon}</span>
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Sidebar Footer */}
+        <div className="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
+          FundVerse Dashboard &copy; {new Date().getFullYear()}
+        </div>
+      </aside>
+
+      {/* Main Right Content Section */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* Top Header / Top Bar */}
+        <header className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm px-4 sm:px-6 py-3 flex items-center justify-between">
+          {/* Left Side: Mobile Hamburger Toggle */}
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 md:hidden focus:outline-none"
+              aria-label="Toggle Sidebar"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <h1 className="text-lg font-bold text-gray-800 dark:text-white hidden sm:block">
+              Dashboard
+            </h1>
+          </div>
+
+          {/* Right Side: Credits, Notifications, User Profile */}
+          <div className="flex items-center space-x-4 sm:space-x-6">
+            {/* Prominent Credits Badge */}
+            <div className="px-3.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-full flex items-center space-x-1.5">
+              <span className="text-emerald-500 font-bold text-sm">💳</span>
+              <span className="text-xs sm:text-sm font-extrabold text-emerald-700 dark:text-emerald-300">
+                Available Credits: <span className="text-emerald-600 dark:text-emerald-400">{user?.credits ?? 0}</span>
+              </span>
+            </div>
+
+            {/* Notification Bell Icon */}
+            <button
+              type="button"
+              className="relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+              aria-label="Notifications"
+            >
+              <span className="text-xl">🔔</span>
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+
+            {/* User Profile Info */}
+            {user && (
+              <div className="flex items-center space-x-3 pl-2 border-l border-gray-200 dark:border-gray-700">
+                {user.profilepictureurl ? (
+                  <img
+                    src={user.profilepictureurl}
+                    alt={user.name}
+                    className="w-9 h-9 rounded-full object-cover border-2 border-indigo-500 shadow-sm"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                    {user.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                )}
+                <div className="hidden lg:block text-left leading-tight">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">
+                    {user.name}
+                  </p>
+                  <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                    {user.role}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* Dashboard Child View Area */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
