@@ -3,14 +3,72 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
+export interface PendingContribution {
+  _id: string;
+  supporterName?: string;
+  supporterEmail: string;
+  campaignTitle?: string;
+  title?: string;
+  amount: number;
+  status: string;
+  date?: string;
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<any>(null);
+  const [pendingContributions, setPendingContributions] = useState<PendingContribution[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string>('');
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  const fetchStats = async (token: string) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/dashboard/stats', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setStats(data.stats || data);
+      } else {
+        setErrorMsg(data.error || 'Failed to load stats');
+      }
+    } catch (err: any) {
+      console.error('Error fetching dashboard stats:', err);
+      setErrorMsg('Error connecting to backend server');
+    }
+  };
+
+  const fetchPendingContributions = async (token: string) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/contributions/pending-for-me', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setPendingContributions(Array.isArray(data) ? data : []);
+      } else {
+        console.error('Failed to fetch pending contributions:', data);
+      }
+    } catch (err: any) {
+      console.error('Error fetching pending contributions:', err);
+    }
+  };
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const loadDashboardData = async () => {
       const token = localStorage.getItem('access-token');
 
       if (!token) {
@@ -18,32 +76,81 @@ export default function DashboardPage() {
         return;
       }
 
-      try {
-        const response = await fetch('http://localhost:5000/api/dashboard/stats', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-          },
-        });
+      await fetchStats(token);
 
-        const data = await response.json();
-
-        if (response.ok) {
-          setStats(data.stats || data);
-        } else {
-          setErrorMsg(data.error || 'Failed to load stats');
-        }
-      } catch (err: any) {
-        console.error('Error fetching dashboard stats:', err);
-        setErrorMsg('Error connecting to backend server');
-      } finally {
-        setLoading(false);
+      if (user?.role === 'Creator') {
+        await fetchPendingContributions(token);
       }
+
+      setLoading(false);
     };
 
-    fetchStats();
-  }, []);
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user]);
+
+  const handleApprove = async (id: string) => {
+    const token = localStorage.getItem('access-token');
+    if (!token) return;
+
+    setActionLoadingId(id);
+    try {
+      const response = await fetch(`http://localhost:5000/api/contributions/approve/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // UI Update Trick: Filter out approved item from state
+        setPendingContributions((prev) => prev.filter((item) => item._id !== id));
+        // Refresh stats
+        fetchStats(token);
+      } else {
+        alert(data.error || 'Failed to approve contribution.');
+      }
+    } catch (err: any) {
+      console.error('Error approving contribution:', err);
+      alert('Network error while approving contribution.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    const token = localStorage.getItem('access-token');
+    if (!token) return;
+
+    setActionLoadingId(id);
+    try {
+      const response = await fetch(`http://localhost:5000/api/contributions/reject/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // UI Update Trick: Filter out rejected item from state
+        setPendingContributions((prev) => prev.filter((item) => item._id !== id));
+      } else {
+        alert(data.error || 'Failed to reject contribution.');
+      }
+    } catch (err: any) {
+      console.error('Error rejecting contribution:', err);
+      alert('Network error while rejecting contribution.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -267,6 +374,95 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Creator Contributions to Review Section */}
+      {user.role === 'Creator' && (
+        <div className="pt-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              Contributions to Review
+            </h2>
+            {pendingContributions.length > 0 && (
+              <span className="px-3 py-1 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold text-xs rounded-full border border-amber-200 dark:border-amber-800">
+                {pendingContributions.length} Pending
+              </span>
+            )}
+          </div>
+
+          {pendingContributions.length === 0 ? (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center shadow-md border border-gray-100 dark:border-gray-700 space-y-2">
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
+                No pending contributions to review right now.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 text-xs font-bold uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                      <th className="py-4 px-6">Supporter Name</th>
+                      <th className="py-4 px-6">Campaign Title</th>
+                      <th className="py-4 px-6">Amount</th>
+                      <th className="py-4 px-6 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                    {pendingContributions.map((contribution) => (
+                      <tr
+                        key={contribution._id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors"
+                      >
+                        {/* Supporter Name / Email */}
+                        <td className="py-4 px-6 font-semibold text-gray-900 dark:text-white">
+                          <div>
+                            <p className="font-bold">
+                              {contribution.supporterName || 'Anonymous Supporter'}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {contribution.supporterEmail}
+                            </p>
+                          </div>
+                        </td>
+
+                        {/* Campaign Title */}
+                        <td className="py-4 px-6 text-gray-700 dark:text-gray-300 max-w-xs truncate">
+                          {contribution.campaignTitle || contribution.title || 'Untitled Campaign'}
+                        </td>
+
+                        {/* Amount */}
+                        <td className="py-4 px-6 font-extrabold text-emerald-600 dark:text-emerald-400">
+                          ${contribution.amount?.toLocaleString()} credits
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-4 px-6 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center space-x-2">
+                            <button
+                              onClick={() => handleApprove(contribution._id)}
+                              disabled={actionLoadingId === contribution._id}
+                              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-lg shadow transition disabled:opacity-50 cursor-pointer"
+                            >
+                              {actionLoadingId === contribution._id ? 'Processing...' : 'Approve'}
+                            </button>
+                            <button
+                              onClick={() => handleReject(contribution._id)}
+                              disabled={actionLoadingId === contribution._id}
+                              className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white font-medium text-xs rounded-lg shadow transition disabled:opacity-50 cursor-pointer"
+                            >
+                              {actionLoadingId === contribution._id ? 'Processing...' : 'Reject'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
