@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -11,10 +11,65 @@ interface NavItem {
   icon?: string;
 }
 
+export interface NotificationItem {
+  _id?: string;
+  message?: string;
+  text?: string;
+  toEmail?: string;
+  actionRoute?: string;
+  time?: string;
+  createdAt?: string;
+  date?: string;
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Notification popup states
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [showPopup, setShowPopup] = useState<boolean>(false);
+
+  // Fetch notifications for logged-in user
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user) return;
+      const token = localStorage.getItem('access-token');
+      if (!token) return;
+
+      try {
+        const response = await fetch('http://localhost:5000/api/notifications/', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+          },
+        });
+
+        const data = await response.json();
+        if (response.ok && Array.isArray(data)) {
+          setNotifications(data);
+        }
+      } catch (err) {
+        console.error('Error fetching notifications in DashboardLayout:', err);
+      }
+    };
+
+    fetchNotifications();
+  }, [user]);
+
+  // Handle clicking outside to close popup
+  useEffect(() => {
+    const handleDocumentClick = () => {
+      setShowPopup(false);
+    };
+
+    document.addEventListener('mousedown', handleDocumentClick);
+    return () => {
+      document.removeEventListener('mousedown', handleDocumentClick);
+    };
+  }, []);
 
   // Dynamic Navigation Links based on User Role
   let navItems: NavItem[] = [];
@@ -140,15 +195,59 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </span>
             </div>
 
-            {/* Notification Bell Icon */}
-            <button
-              type="button"
-              className="relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-              aria-label="Notifications"
-            >
-              <span className="text-xl">🔔</span>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            {/* Notification Bell Icon with Floating Popup */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPopup(!showPopup);
+                }}
+                className="relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer focus:outline-none"
+                aria-label="Notifications"
+              >
+                <span className="text-xl">🔔</span>
+                {notifications.length > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-white dark:border-gray-800 shadow">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Floating Notification Popup */}
+              {showPopup && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden text-left"
+                >
+                  <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-white">Notifications</h4>
+                    <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                      {notifications.length} new
+                    </span>
+                  </div>
+
+                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                        No new notifications.
+                      </div>
+                    ) : (
+                      notifications.map((item, idx) => (
+                        <div key={item._id || idx} className="p-3.5 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition">
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-snug">
+                            {item.message || item.text}
+                          </p>
+                          <span className="block mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                            {new Date(item.time || item.createdAt || item.date || Date.now()).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* User Profile Info */}
             {user && (
