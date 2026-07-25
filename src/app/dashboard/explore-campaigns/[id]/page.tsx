@@ -3,6 +3,7 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE } from '@/lib/api';
 
 export interface CampaignDetail {
   _id: string;
@@ -41,7 +42,7 @@ export default function CampaignDetailsPage({ params }: { params: Promise<{ id: 
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/campaigns/approved', {
+      const response = await fetch(`${API_BASE}/api/campaigns/approved`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +97,7 @@ export default function CampaignDetailsPage({ params }: { params: Promise<{ id: 
     setSubmitting(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/contributions', {
+      const response = await fetch(`${API_BASE}/api/contributions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,7 +142,7 @@ export default function CampaignDetailsPage({ params }: { params: Promise<{ id: 
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/admin/report-campaign', {
+      const response = await fetch(`${API_BASE}/api/admin/report-campaign`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

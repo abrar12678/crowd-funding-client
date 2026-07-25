@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { API_BASE } from '@/lib/api';
 
 // ==========================================
 // 1. TypeScript Interfaces & Data Models
@@ -47,6 +48,9 @@ export interface AuthContextType {
     email: string,
     password: string
   ) => Promise<LoginUserResult>;
+  loginWithGoogle: (
+    credential: string
+  ) => Promise<LoginUserResult>;
   logOut: () => void;
 }
 
@@ -62,13 +66,13 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // ==========================================
 
 /**
- * AuthProvider wraps the application or pages to grant access to 
+ * AuthProvider wraps the application or pages to grant access to
  * global user state, persistent login checks, and auth helper methods.
  */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Global User State: holds logged-in user details (null if unauthenticated)
   const [user, setUser] = useState<User | null>(null);
-  
+
   // Loading State: true while checking localStorage session on initial page load
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -111,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     role: string
   ): Promise<CreateUserResult> => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -130,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.ok && data.token) {
         // 1. Store JWT token in localStorage for authenticated API calls
         localStorage.setItem('access-token', data.token);
-        
+
         // 2. Persist user object in localStorage and update state
         if (data.user) {
           localStorage.setItem('logged-in-user', JSON.stringify(data.user));
@@ -162,7 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     password: string
   ): Promise<LoginUserResult> => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -175,7 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.ok && data.token) {
         // 1. Store JWT token in localStorage for authenticated requests
         localStorage.setItem('access-token', data.token);
-        
+
         // 2. Persist user object in localStorage and update state
         if (data.user) {
           localStorage.setItem('logged-in-user', JSON.stringify(data.user));
@@ -196,6 +200,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // ------------------------------------------
+  // LOGIN WITH GOOGLE
+  // ------------------------------------------
+  /**
+   * Authenticates or registers a user via Google Sign-In.
+   * Sends the Google ID token (credential) to the server for verification.
+   * Server finds or creates the user and returns our JWT.
+   */
+  const loginWithGoogle = async (
+    credential: string
+  ): Promise<LoginUserResult> => {
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/google`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ credential }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.token) {
+        localStorage.setItem('access-token', data.token);
+
+        if (data.user) {
+          localStorage.setItem('logged-in-user', JSON.stringify(data.user));
+          setUser(data.user);
+        }
+        return { success: true, user: data.user };
+      } else {
+        const errorMsg = data.error || 'Google sign-in failed.';
+        return { success: false, error: errorMsg };
+      }
+    } catch (err: any) {
+      console.error('Google auth API error:', err);
+      return {
+        success: false,
+        error: err.message || 'Network error during Google sign-in.',
+      };
+    }
+  };
+
+  // ------------------------------------------
   // LOGOUT USER
   // ------------------------------------------
   /**
@@ -209,7 +256,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Expose context value to child components
   return (
-    <AuthContext.Provider value={{ user, loading, createUser, loginUser, logOut }}>
+    <AuthContext.Provider value={{ user, loading, createUser, loginUser, loginWithGoogle, logOut }}>
       {children}
     </AuthContext.Provider>
   );

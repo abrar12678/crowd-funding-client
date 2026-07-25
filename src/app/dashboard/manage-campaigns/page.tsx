@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE } from '@/lib/api';
 
 export interface CampaignItem {
   _id: string;
@@ -29,7 +30,7 @@ export default function ManageCampaignsPage() {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/campaigns/approved', {
+        const response = await fetch(`${API_BASE}/api/campaigns/approved`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -83,7 +84,7 @@ export default function ManageCampaignsPage() {
     setDeletingId(id);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/delete-campaign/${id}`, {
+      const response = await fetch(`${API_BASE}/api/admin/delete-campaign/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

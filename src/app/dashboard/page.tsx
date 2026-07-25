@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE } from '@/lib/api';
 
 export interface PendingContribution {
   _id: string;
@@ -24,7 +25,7 @@ export default function DashboardPage() {
 
   const fetchStats = async (token: string) => {
     try {
-      const response = await fetch('http://localhost:5000/api/dashboard/stats', {
+      const response = await fetch(`${API_BASE}/api/dashboard/stats`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -47,7 +48,7 @@ export default function DashboardPage() {
 
   const fetchPendingContributions = async (token: string) => {
     try {
-      const response = await fetch('http://localhost:5000/api/contributions/pending-for-me', {
+      const response = await fetch(`${API_BASE}/api/contributions/pending-for-me`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +97,7 @@ export default function DashboardPage() {
 
     setActionLoadingId(id);
     try {
-      const response = await fetch(`http://localhost:5000/api/contributions/approve/${id}`, {
+      const response = await fetch(`${API_BASE}/api/contributions/approve/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -128,7 +129,7 @@ export default function DashboardPage() {
 
     setActionLoadingId(id);
     try {
-      const response = await fetch(`http://localhost:5000/api/contributions/reject/${id}`, {
+      const response = await fetch(`${API_BASE}/api/contributions/reject/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

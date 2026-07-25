@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE } from '@/lib/api';
 
 export interface WithdrawalRequest {
   _id: string;
@@ -32,7 +33,7 @@ export default function WithdrawalRequestsPage() {
 
       try {
         // Attempt dedicated admin pending-withdrawals endpoint first
-        let response = await fetch('http://localhost:5000/api/admin/pending-withdrawals', {
+        let response = await fetch(`${API_BASE}/api/admin/pending-withdrawals`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -42,7 +43,7 @@ export default function WithdrawalRequestsPage() {
 
         // Fallback to payments route if needed
         if (!response.ok) {
-          response = await fetch('http://localhost:5000/api/payments/my-payments', {
+          response = await fetch(`${API_BASE}/api/payments/my-payments`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -99,7 +100,7 @@ export default function WithdrawalRequestsPage() {
     setActionLoadingId(id);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/approve-withdrawal/${id}`, {
+      const response = await fetch(`${API_BASE}/api/admin/approve-withdrawal/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE } from '@/lib/api';
 
 export interface NotificationItem {
   _id?: string;
@@ -33,7 +34,7 @@ export default function Navbar() {
       if (!token) return;
 
       try {
-        const response = await fetch('http://localhost:5000/api/notifications/', {
+        const response = await fetch(`${API_BASE}/api/notifications/`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -88,7 +89,7 @@ export default function Navbar() {
           {/* Right: Desktop Navigation Links */}
           <div className="hidden md:flex md:items-center md:space-x-6">
             <Link
-              href="#"
+              href="/dashboard/explore-campaigns"
               className="text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
             >
               Explore Campaigns
@@ -245,7 +246,7 @@ export default function Navbar() {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 pt-2 pb-4 space-y-3">
           <Link
-            href="#"
+            href="/dashboard/explore-campaigns"
             onClick={() => setIsMobileMenuOpen(false)}
             className="block text-base font-medium text-gray-700 dark:text-gray-200 hover:text-indigo-600 transition"
           >

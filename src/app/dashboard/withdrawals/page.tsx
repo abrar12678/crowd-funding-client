@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE } from '@/lib/api';
 
 export default function WithdrawalsPage() {
   const { user } = useAuth();
@@ -28,7 +29,7 @@ export default function WithdrawalsPage() {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/dashboard/stats', {
+        const response = await fetch(`${API_BASE}/api/dashboard/stats`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -77,7 +78,7 @@ export default function WithdrawalsPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/payments/request-withdrawal', {
+      const response = await fetch(`${API_BASE}/api/payments/request-withdrawal`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

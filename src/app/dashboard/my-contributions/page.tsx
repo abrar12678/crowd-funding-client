@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '@/lib/api';
 
 export interface Contribution {
   _id: string;
@@ -29,7 +30,7 @@ export default function MyContributionsPage() {
 
       try {
         const response = await fetch(
-          `http://localhost:5000/api/payments/my-contributions?page=${currentPage}&limit=10`,
+          `${API_BASE}/api/payments/my-contributions?page=${currentPage}&limit=10`,
           {
             method: 'GET',
             headers: {

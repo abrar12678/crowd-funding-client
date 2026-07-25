@@ -16,7 +16,7 @@ export default function Footer() {
             FundVerse
           </Link>
           <p className="text-sm text-gray-400">
-            &copy; 2024 FundVerse. All rights reserved.
+            &copy; {new Date().getFullYear()} FundVerse. All rights reserved.
           </p>
         </div>
 
@@ -26,16 +26,36 @@ export default function Footer() {
             Follow Us
           </h4>
           <div className="flex flex-wrap justify-center md:justify-end items-center space-x-6 text-sm text-gray-400">
-            <a href="#" className="hover:text-blue-400 transition font-medium">
+            <a
+              href="https://www.linkedin.com/in/abrar12678"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-blue-400 transition font-medium"
+            >
               LinkedIn
             </a>
-            <a href="#" className="hover:text-blue-400 transition font-medium">
+            <a
+              href="https://github.com/abrar12678/crowd-funding-client"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-blue-400 transition font-medium"
+            >
               GitHub
             </a>
-            <a href="#" className="hover:text-blue-400 transition font-medium">
+            <a
+              href="https://facebook.com/abrar12678"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-blue-400 transition font-medium"
+            >
               Facebook
             </a>
-            <a href="#" className="hover:text-blue-400 transition font-medium">
+            <a
+              href="https://twitter.com/abrar12678"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-blue-400 transition font-medium"
+            >
               Twitter
             </a>
           </div>

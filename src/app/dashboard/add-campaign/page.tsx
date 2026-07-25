@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { API_BASE } from '@/lib/api';
 
 export default function AddCampaignPage() {
   const [title, setTitle] = useState('');
@@ -31,7 +32,7 @@ export default function AddCampaignPage() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/campaigns', {
+      const response = await fetch(`${API_BASE}/api/campaigns`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth, User } from '@/context/AuthContext';
+import { API_BASE } from '@/lib/api';
 
 export default function ManageUsersPage() {
   const { user, loading: authLoading } = useAuth();
@@ -18,7 +19,7 @@ export default function ManageUsersPage() {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/admin/users', {
+        const response = await fetch(`${API_BASE}/api/admin/users`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -69,7 +70,7 @@ export default function ManageUsersPage() {
     setUpdatingEmail(targetEmail);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/update-role/${targetEmail}`, {
+      const response = await fetch(`${API_BASE}/api/admin/update-role/${targetEmail}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -106,7 +107,7 @@ export default function ManageUsersPage() {
     setUpdatingEmail(targetEmail);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/delete-user/${targetEmail}`, {
+      const response = await fetch(`${API_BASE}/api/admin/delete-user/${targetEmail}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

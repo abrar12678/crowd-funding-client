@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE } from '@/lib/api';
 
 interface NavItem {
   label: string;
@@ -23,13 +24,21 @@ export interface NotificationItem {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Notification popup states
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [showPopup, setShowPopup] = useState<boolean>(false);
+
+  // Private route guard: redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   // Fetch notifications for logged-in user
   useEffect(() => {
@@ -39,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (!token) return;
 
       try {
-        const response = await fetch('http://localhost:5000/api/notifications/', {
+        const response = await fetch(`${API_BASE}/api/notifications/`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -70,6 +79,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       document.removeEventListener('mousedown', handleDocumentClick);
     };
   }, []);
+
+  // Show loading spinner while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-600 dark:text-gray-400 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard content if user is not authenticated
+  if (!user) {
+    return null;
+  }
 
   // Dynamic Navigation Links based on User Role
   let navItems: NavItem[] = [];

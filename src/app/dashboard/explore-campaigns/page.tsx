@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { API_BASE } from '@/lib/api';
 
 export interface Campaign {
   _id: string;
@@ -33,7 +34,7 @@ export default function ExploreCampaignsPage() {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/campaigns/approved', {
+        const response = await fetch(`${API_BASE}/api/campaigns/approved`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

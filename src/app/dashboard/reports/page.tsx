@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE } from '@/lib/api';
 
 export interface ReportItem {
   _id: string;
@@ -28,7 +29,7 @@ export default function AdminReportsPage() {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/admin/reports', {
+        const response = await fetch(`${API_BASE}/api/admin/reports`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

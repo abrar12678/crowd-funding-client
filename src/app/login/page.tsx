@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AuthProvider, AuthContext } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
+import GoogleLoginButton from '@/components/GoogleLoginButton';
 
 function LoginForm() {
-  const authContext = useContext(AuthContext);
+  const { loginUser, loginWithGoogle } = useAuth();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -14,20 +15,28 @@ function LoginForm() {
 
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Email format validator
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setIsSubmitting(true);
 
-    if (!authContext?.loginUser) {
-      setErrorMessage('Auth context is not initialized.');
+    // Email format validation
+    if (!isValidEmail(email)) {
+      setErrorMessage('Please enter a valid email address (e.g. you@example.com).');
       setIsSubmitting(false);
       return;
     }
 
     try {
-      const result = await authContext.loginUser(email, password);
+      const result = await loginUser(email, password);
 
       if (result.success) {
         router.push('/dashboard');
@@ -38,6 +47,24 @@ function LoginForm() {
       setErrorMessage('An unexpected error occurred during login.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credential: string) => {
+    setErrorMessage('');
+    setGoogleLoading(true);
+
+    try {
+      const result = await loginWithGoogle(credential);
+      if (result.success) {
+        router.push('/dashboard');
+      } else {
+        setErrorMessage(result.error || 'Google sign-in failed.');
+      }
+    } catch (err: any) {
+      setErrorMessage('An unexpected error occurred during Google sign-in.');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -53,7 +80,29 @@ function LoginForm() {
           </p>
         </div>
 
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+        {/* Google Sign-In Button */}
+        <div className="space-y-3">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white dark:bg-gray-800 px-3 text-gray-500 dark:text-gray-400 font-medium">
+                Or continue with
+              </span>
+            </div>
+          </div>
+          {googleLoading ? (
+            <div className="flex items-center justify-center py-3">
+              <div className="w-6 h-6 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              <span className="ml-3 text-sm text-gray-600 dark:text-gray-400 font-medium">Signing in with Google...</span>
+            </div>
+          ) : (
+            <GoogleLoginButton onSuccess={handleGoogleSuccess} />
+          )}
+        </div>
+
+        <form className="mt-2 space-y-4" onSubmit={handleSubmit}>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Email Address
@@ -81,7 +130,7 @@ function LoginForm() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
             />
           </div>
@@ -120,9 +169,5 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-  return (
-    <AuthProvider>
-      <LoginForm />
-    </AuthProvider>
-  );
+  return <LoginForm />;
 }

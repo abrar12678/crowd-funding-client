@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE } from '@/lib/api';
 
 export interface CampaignItem {
   _id: string;
@@ -30,7 +31,7 @@ export default function MyCampaignsPage() {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/campaigns/my-campaigns', {
+        const response = await fetch(`${API_BASE}/api/campaigns/my-campaigns`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
