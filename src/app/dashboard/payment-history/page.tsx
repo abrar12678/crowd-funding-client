@@ -4,182 +4,103 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { API_BASE } from '@/lib/api';
 
-export interface PaymentItem {
-  _id: string;
-  creatorEmail: string;
-  creatorName: string;
-  withdrawCredit: number;
-  withdrawAmount: number;
-  paymentSystem: string;
-  accountNumber: string;
-  status: string;
-  date?: string;
-  createdAt?: string;
-}
+interface WithdrawalItem { _id:string; creatorEmail:string; creatorName:string; withdrawCredit:number; withdrawAmount:number; paymentSystem:string; accountNumber:string; status:string; date?:string; createdAt?:string; }
+interface PurchaseItem { _id:string; supporterEmail:string; supporterName:string; credits:number; amount:number; paymentMethod:string; status:string; date?:string; }
 
 export default function PaymentHistoryPage() {
   const { user } = useAuth();
-  const [payments, setPayments] = useState<PaymentItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalItem[]>([]);
+  const [purchases, setPurchases] = useState<PurchaseItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPayments = async () => {
-      const token = localStorage.getItem('access-token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
+    const token = localStorage.getItem('access-token');
+    if (!token) { setLoading(false); return; }
+    const fetch = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/payments/my-payments`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-          },
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          setPayments(Array.isArray(data) ? data : []);
+        if (user?.role === 'Supporter') {
+          const r = await fetch(`${API_BASE}/api/payments/my-purchases`, {headers:{'Authorization':'Bearer '+token}});
+          const d = await r.json(); if (r.ok && Array.isArray(d)) setPurchases(d);
         } else {
-          console.error('Failed to fetch payment history:', data);
+          const r = await fetch(`${API_BASE}/api/payments/my-payments`, {headers:{'Authorization':'Bearer '+token}});
+          const d = await r.json(); if (r.ok && Array.isArray(d)) setWithdrawals(d);
         }
-      } catch (err) {
-        console.error('Error fetching payment history:', err);
-      } finally {
-        setLoading(false);
-      }
+      } catch(e) { console.error(e); } finally { setLoading(false); }
     };
+    fetch();
+  }, [user]);
 
-    fetchPayments();
-  }, []);
-
-  const getStatusBadge = (status: string) => {
-    const s = (status || '').toLowerCase();
-    if (s === 'approved') {
-      return (
-        <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold text-xs rounded-full border border-emerald-200 dark:border-emerald-800">
-          Approved
-        </span>
-      );
-    } else if (s === 'pending') {
-      return (
-        <span className="px-3 py-1 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-semibold text-xs rounded-full border border-amber-200 dark:border-amber-800">
-          Pending
-        </span>
-      );
-    } else if (s === 'rejected') {
-      return (
-        <span className="px-3 py-1 bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 font-semibold text-xs rounded-full border border-red-200 dark:border-red-800">
-          Rejected
-        </span>
-      );
-    } else {
-      return (
-        <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-xs rounded-full">
-          {status}
-        </span>
-      );
-    }
+  const badge = (s:string) => {
+    const m:Record<string,string> = {approved:'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 border-emerald-200',completed:'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 border-emerald-200',pending:'bg-amber-100 dark:bg-amber-950/60 text-amber-700 border-amber-200',rejected:'bg-red-100 dark:bg-red-950/60 text-red-700 border-red-200'};
+    const c = m[(s||'').toLowerCase()] || 'bg-gray-100 dark:bg-gray-700 text-gray-700';
+    return <span className={`px-3 py-1 font-semibold text-xs rounded-full border ${c}`}>{s}</span>;
   };
-
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'N/A';
-    try {
-      return new Date(dateStr).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return dateStr;
-    }
-  };
+  const fd = (d?:string) => d ? new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) : 'N/A';
+  const isS = user?.role === 'Supporter';
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Page Header */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700">
-        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-          Payment History
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Track all your withdrawal requests, payment systems, and payout statuses.
-        </p>
+        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">{isS ? 'Credit Purchase History' : 'Payment History'}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{isS ? 'Track all your credit purchases and top-ups.' : 'Track all your withdrawal requests and payout statuses.'}</p>
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-16 space-y-3 bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8 border border-gray-100 dark:border-gray-700">
+        <div className="flex flex-col items-center justify-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700">
           <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-gray-600 dark:text-gray-400 font-medium">Loading withdrawal history...</p>
+          <p className="text-gray-600 dark:text-gray-400 font-medium mt-3">Loading...</p>
         </div>
-      ) : payments.length === 0 ? (
-        /* Empty State */
-        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 p-8 space-y-3">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-300 rounded-full flex items-center justify-center text-3xl mx-auto">
-            💳
+      ) : isS ? (
+        purchases.length === 0 ? (
+          <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 space-y-3">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 text-gray-400 rounded-full flex items-center justify-center text-3xl mx-auto">$</div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">No purchase history yet.</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Purchase credits to see records here.</p>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-            No withdrawal history yet.
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-            Request a withdrawal of your raised credits to see records listed here.
-          </p>
+        ) : (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead><tr className="bg-gray-50 dark:bg-gray-700/50 text-xs font-bold uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+                  <th className="py-4 px-6">Date</th><th className="py-4 px-6">Credits</th><th className="py-4 px-6">Amount ($)</th><th className="py-4 px-6">Method</th><th className="py-4 px-6">Status</th>
+                </tr></thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                  {purchases.map((i) => (
+                    <tr key={i._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                      <td className="py-4 px-6 text-gray-500 whitespace-nowrap">{fd(i.date)}</td>
+                      <td className="py-4 px-6 font-bold text-indigo-600 dark:text-indigo-400">{i.credits?.toLocaleString()}</td>
+                      <td className="py-4 px-6 font-extrabold text-emerald-600 dark:text-emerald-400">${i.amount}</td>
+                      <td className="py-4 px-6"><span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-xs font-medium capitalize">{i.paymentMethod}</span></td>
+                      <td className="py-4 px-6">{badge(i.status)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )
+      ) : withdrawals.length === 0 ? (
+        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 space-y-3">
+          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 text-gray-400 rounded-full flex items-center justify-center text-3xl mx-auto">$</div>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">No withdrawal history yet.</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Request a withdrawal to see records here.</p>
         </div>
       ) : (
-        /* Responsive Table Container */
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 text-xs font-bold uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
-                  <th className="py-4 px-6">Date</th>
-                  <th className="py-4 px-6">Withdraw Credits</th>
-                  <th className="py-4 px-6">Withdraw Amount ($)</th>
-                  <th className="py-4 px-6">Payment System</th>
-                  <th className="py-4 px-6">Account Number</th>
-                  <th className="py-4 px-6">Status</th>
-                </tr>
-              </thead>
+              <thead><tr className="bg-gray-50 dark:bg-gray-700/50 text-xs font-bold uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+                <th className="py-4 px-6">Date</th><th className="py-4 px-6">Credits</th><th className="py-4 px-6">Amount ($)</th><th className="py-4 px-6">System</th><th className="py-4 px-6">Account</th><th className="py-4 px-6">Status</th>
+              </tr></thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-                {payments.map((item) => (
-                  <tr
-                    key={item._id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors"
-                  >
-                    {/* Date */}
-                    <td className="py-4 px-6 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                      {formatDate(item.date || item.createdAt)}
-                    </td>
-
-                    {/* Withdraw Credits */}
-                    <td className="py-4 px-6 font-bold text-indigo-600 dark:text-indigo-400">
-                      {item.withdrawCredit?.toLocaleString()} credits
-                    </td>
-
-                    {/* Withdraw Amount ($) */}
-                    <td className="py-4 px-6 font-extrabold text-emerald-600 dark:text-emerald-400">
-                      ${item.withdrawAmount?.toLocaleString()} USD
-                    </td>
-
-                    {/* Payment System */}
-                    <td className="py-4 px-6 text-gray-700 dark:text-gray-300">
-                      <span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-xs font-medium">
-                        {item.paymentSystem}
-                      </span>
-                    </td>
-
-                    {/* Account Number */}
-                    <td className="py-4 px-6 font-mono text-gray-600 dark:text-gray-300">
-                      {item.accountNumber}
-                    </td>
-
-                    {/* Status */}
-                    <td className="py-4 px-6">
-                      {getStatusBadge(item.status)}
-                    </td>
+                {withdrawals.map((i) => (
+                  <tr key={i._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                    <td className="py-4 px-6 text-gray-500 whitespace-nowrap">{fd(i.date||i.createdAt)}</td>
+                    <td className="py-4 px-6 font-bold text-indigo-600 dark:text-indigo-400">{i.withdrawCredit?.toLocaleString()}</td>
+                    <td className="py-4 px-6 font-extrabold text-emerald-600 dark:text-emerald-400">${i.withdrawAmount?.toLocaleString()}</td>
+                    <td className="py-4 px-6"><span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-xs font-medium">{i.paymentSystem}</span></td>
+                    <td className="py-4 px-6 font-mono text-gray-600 dark:text-gray-300">{i.accountNumber}</td>
+                    <td className="py-4 px-6">{badge(i.status)}</td>
                   </tr>
                 ))}
               </tbody>

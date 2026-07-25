@@ -7,57 +7,19 @@ export default function Footer() {
   return (
     <footer className="bg-gray-900 text-white py-8 border-t border-gray-800 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
-        {/* Left Section: Logo & Copyright */}
         <div className="space-y-2 text-center md:text-left">
-          <Link
-            href="/"
-            className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent inline-block"
-          >
+          <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent inline-block">
             FundVerse
           </Link>
-          <p className="text-sm text-gray-400">
-            &copy; {new Date().getFullYear()} FundVerse. All rights reserved.
-          </p>
+          <p className="text-sm text-gray-400">&copy; {new Date().getFullYear()} FundVerse. All rights reserved.</p>
         </div>
-
-        {/* Right Section: Follow Us & Social Links */}
         <div className="text-center md:text-right space-y-2">
-          <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-300">
-            Follow Us
-          </h4>
+          <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-300">Follow Us</h4>
           <div className="flex flex-wrap justify-center md:justify-end items-center space-x-6 text-sm text-gray-400">
-            <a
-              href="https://www.linkedin.com/in/abrar12678"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-blue-400 transition font-medium"
-            >
-              LinkedIn
-            </a>
-            <a
-              href="https://github.com/abrar12678/crowd-funding-client"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-blue-400 transition font-medium"
-            >
-              GitHub
-            </a>
-            <a
-              href="https://facebook.com/abrar12678"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-blue-400 transition font-medium"
-            >
-              Facebook
-            </a>
-            <a
-              href="https://twitter.com/abrar12678"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-blue-400 transition font-medium"
-            >
-              Twitter
-            </a>
+            <a href="https://www.linkedin.com/in/abrar12678" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition font-medium">LinkedIn</a>
+            <a href="https://github.com/abrar12678/crowd-funding-client" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition font-medium">GitHub</a>
+            <a href="https://facebook.com/abrar12678" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition font-medium">Facebook</a>
+            <a href="https://twitter.com/abrar12678" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition font-medium">Twitter</a>
           </div>
         </div>
       </div>

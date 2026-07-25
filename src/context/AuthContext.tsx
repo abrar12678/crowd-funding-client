@@ -52,6 +52,7 @@ export interface AuthContextType {
     credential: string
   ) => Promise<LoginUserResult>;
   logOut: () => void;
+  setUser: (user: User | null) => void;
 }
 
 // ==========================================
@@ -256,7 +257,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Expose context value to child components
   return (
-    <AuthContext.Provider value={{ user, loading, createUser, loginUser, loginWithGoogle, logOut }}>
+    <AuthContext.Provider value={{ user, loading, setUser, createUser, loginUser, loginWithGoogle, logOut }}>
       {children}
     </AuthContext.Provider>
   );

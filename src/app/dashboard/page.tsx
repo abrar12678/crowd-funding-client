@@ -22,6 +22,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [approvedContributions, setApprovedContributions] = useState<any[]>([]);
 
   const fetchStats = async (token: string) => {
     try {
@@ -83,6 +84,10 @@ export default function DashboardPage() {
         await fetchPendingContributions(token);
       }
 
+      if (user?.role === 'Supporter') {
+        await fetchApprovedContributions(token);
+      }
+
       setLoading(false);
     };
 
@@ -90,6 +95,14 @@ export default function DashboardPage() {
       loadDashboardData();
     }
   }, [user]);
+
+  const fetchApprovedContributions = async (token: string) => {
+    try {
+      const r = await fetch(`${API_BASE}/api/contributions/my-approved`, { headers: { 'Authorization': 'Bearer ' + token } });
+      const d = await r.json();
+      if (r.ok && Array.isArray(d)) setApprovedContributions(d);
+    } catch (e) { console.error(e); }
+  };
 
   const handleApprove = async (id: string) => {
     const token = localStorage.getItem('access-token');
@@ -375,6 +388,45 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Supporter Approved Contributions Table */}
+      {user.role === 'Supporter' && (
+        <div className="pt-4 space-y-4">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Approved Contributions</h2>
+          {approvedContributions.length === 0 ? (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center shadow-md border border-gray-100 dark:border-gray-700">
+              <p className="text-gray-500 dark:text-gray-400 text-sm">No approved contributions yet.</p>
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 text-xs font-bold uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                      <th className="py-4 px-6">Campaign Title</th>
+                      <th className="py-4 px-6">Creator</th>
+                      <th className="py-4 px-6">Amount (credits)</th>
+                      <th className="py-4 px-6">Status</th>
+                      <th className="py-4 px-6">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                    {approvedContributions.map((c: any) => (
+                      <tr key={c._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                        <td className="py-4 px-6 font-medium text-gray-900 dark:text-white max-w-xs truncate">{c.campaignTitle || c.title || 'N/A'}</td>
+                        <td className="py-4 px-6 text-gray-700 dark:text-gray-300">{c.creatorName || 'N/A'}</td>
+                        <td className="py-4 px-6 font-extrabold text-emerald-600 dark:text-emerald-400">{c.amount?.toLocaleString()}</td>
+                        <td className="py-4 px-6"><span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold text-xs rounded-full border border-emerald-200 dark:border-emerald-800">Approved</span></td>
+                        <td className="py-4 px-6 text-gray-500 dark:text-gray-400 whitespace-nowrap">{c.date ? new Date(c.date).toLocaleDateString() : 'N/A'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Creator Contributions to Review Section */}
       {user.role === 'Creator' && (
