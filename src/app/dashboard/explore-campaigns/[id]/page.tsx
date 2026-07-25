@@ -128,6 +128,47 @@ export default function CampaignDetailsPage({ params }: { params: Promise<{ id: 
     }
   };
 
+  const handleReport = async () => {
+    if (!campaign || !user) return;
+
+    const enteredReason = window.prompt('Enter your reason for reporting:');
+    if (!enteredReason || !enteredReason.trim()) return;
+
+    const token = localStorage.getItem('access-token');
+    if (!token) {
+      alert('You must be logged in to report a campaign.');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/admin/report-campaign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+        body: JSON.stringify({
+          supporterEmail: user.email,
+          supporterName: user.name,
+          campaignId: campaign._id,
+          campaignTitle: campaign.title,
+          reason: enteredReason.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('Report submitted successfully!');
+      } else {
+        alert(data.error || 'Failed to submit report.');
+      }
+    } catch (err) {
+      console.error('Error submitting campaign report:', err);
+      alert('Network error while submitting campaign report.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
@@ -305,6 +346,17 @@ export default function CampaignDetailsPage({ params }: { params: Promise<{ id: 
                 {submitting ? 'Processing...' : 'Contribute Now'}
               </button>
             </form>
+
+            {/* Report Suspicious Campaign Link */}
+            <div className="pt-2 text-right">
+              <button
+                type="button"
+                onClick={handleReport}
+                className="text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-semibold underline cursor-pointer"
+              >
+                🚩 Report this campaign as suspicious
+              </button>
+            </div>
           </div>
         </div>
       </div>
