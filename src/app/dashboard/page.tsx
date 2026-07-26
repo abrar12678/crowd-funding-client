@@ -23,6 +23,8 @@ export default function DashboardPage() {
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [approvedContributions, setApprovedContributions] = useState<any[]>([]);
+  const [viewModalContrib, setViewModalContrib] = useState<PendingContribution | null>(null);
+  const [modalActionLoading, setModalActionLoading] = useState(false);
 
   const fetchStats = async (token: string) => {
     try {
@@ -182,6 +184,115 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+ const handleModalApprove = async () => {
+    if (!viewModalContrib) return;
+    const token = localStorage.getItem('access-token');
+    if (!token) return;
+    setModalActionLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/contributions/approve/${viewModalContrib._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setPendingContributions((prev) => prev.filter((item) => item._id !== viewModalContrib._id));
+        fetchStats(token);
+        setViewModalContrib(null);
+      } else {
+        alert(data.error || 'Failed to approve.');
+      }
+    } catch (err) {
+      alert('Network error while approving.');
+    } finally {
+      setModalActionLoading(false);
+    }
+  };
+
+  const handleModalReject = async () => {
+    if (!viewModalContrib) return;
+    const token = localStorage.getItem('access-token');
+    if (!token) return;
+    setModalActionLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/contributions/reject/${viewModalContrib._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setPendingContributions((prev) => prev.filter((item) => item._id !== viewModalContrib._id));
+        setViewModalContrib(null);
+      } else {
+        alert(data.error || 'Failed to reject.');
+      }
+    } catch (err) {
+      alert('Network error while rejecting.');
+    } finally {
+      setModalActionLoading(false);
+    }
+  };
+
+  // #14: Contribution Detail Modal for Creator
+  const renderViewModal = () => {
+    if (!viewModalContrib) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setViewModalContrib(null)}>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Contribution Details</h2>
+            <button onClick={() => setViewModalContrib(null)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition cursor-pointer">✕</button>
+          </div>
+          <div className="p-6 space-y-5">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Supporter Name</p>
+                <p className="font-bold text-gray-900 dark:text-white text-sm">{viewModalContrib.supporterName || 'Anonymous'}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Supporter Email</p>
+                <p className="font-bold text-gray-900 dark:text-white text-sm">{viewModalContrib.supporterEmail}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Campaign</p>
+                <p className="font-bold text-gray-900 dark:text-white text-sm">{viewModalContrib.campaignTitle || viewModalContrib.title || 'N/A'}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount (Credits)</p>
+                <p className="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">{viewModalContrib.amount?.toLocaleString()}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</p>
+                <span className="px-2.5 py-1 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-semibold text-xs rounded-full">{viewModalContrib.status || 'Pending'}</span>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</p>
+                <p className="font-bold text-gray-900 dark:text-white text-sm">{viewModalContrib.date ? new Date(viewModalContrib.date).toLocaleDateString() : 'N/A'}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={handleModalApprove}
+                disabled={modalActionLoading}
+                className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow transition disabled:opacity-50 cursor-pointer"
+              >
+                {modalActionLoading ? 'Processing...' : 'Approve'}
+              </button>
+              <button
+                onClick={handleModalReject}
+                disabled={modalActionLoading}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm shadow transition disabled:opacity-50 cursor-pointer"
+              >
+                {modalActionLoading ? 'Processing...' : 'Reject'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -488,24 +599,14 @@ export default function DashboardPage() {
                           ${contribution.amount?.toLocaleString()} credits
                         </td>
 
-                        {/* Actions */}
+                        {/* Actions — #14: View Detail Modal */}
                         <td className="py-4 px-6 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center space-x-2">
-                            <button
-                              onClick={() => handleApprove(contribution._id)}
-                              disabled={actionLoadingId === contribution._id}
-                              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-lg shadow transition disabled:opacity-50 cursor-pointer"
-                            >
-                              {actionLoadingId === contribution._id ? 'Processing...' : 'Approve'}
-                            </button>
-                            <button
-                              onClick={() => handleReject(contribution._id)}
-                              disabled={actionLoadingId === contribution._id}
-                              className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white font-medium text-xs rounded-lg shadow transition disabled:opacity-50 cursor-pointer"
-                            >
-                              {actionLoadingId === contribution._id ? 'Processing...' : 'Reject'}
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => setViewModalContrib(contribution)}
+                            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs rounded-lg shadow transition cursor-pointer"
+                          >
+                            View Contribution
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -516,6 +617,8 @@ export default function DashboardPage() {
           )}
         </div>
       )}
+      {/* #14: View Contribution Modal */}
+      {renderViewModal()}
     </div>
   );
 }

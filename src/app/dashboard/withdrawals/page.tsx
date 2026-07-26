@@ -17,8 +17,12 @@ export default function WithdrawalsPage() {
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  // Auto-calculated dollar amount (credits / 20)
+  // #20: Auto-calculated dollar amount (credits / 20) — live on input change
   const withdrawAmount = withdrawCredit ? (Number(withdrawCredit) / 20).toFixed(2) : '0.00';
+
+  // #19: Check if user has insufficient credit
+  const hasInsufficientCredit = totalRaised !== null && Number(withdrawCredit) > totalRaised;
+  const isBelowMinimum = withdrawCredit !== '' && Number(withdrawCredit) < 200;
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -96,10 +100,15 @@ export default function WithdrawalsPage() {
 
       if (response.ok) {
         setSuccessMsg('Withdrawal request submitted successfully!');
-        alert('Withdrawal request submitted successfully!');
         setWithdrawCredit('');
         setAccountNumber('');
         setPaymentSystem('Stripe');
+        // Refresh stats
+        const statsRes = await fetch(`${API_BASE}/api/dashboard/stats`, {
+          headers: { 'Authorization': 'Bearer ' + token },
+        });
+        const statsData = await statsRes.json();
+        if (statsRes.ok && statsData.stats) setTotalRaised(statsData.stats.totalRaised ?? 0);
       } else {
         setErrorMsg(data.error || data.message || 'Withdrawal request failed.');
       }
@@ -125,7 +134,7 @@ export default function WithdrawalsPage() {
         <div className="bg-white/10 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/20 text-center w-full sm:w-auto">
           <p className="text-xs font-semibold text-white/80 uppercase tracking-wider">Total Raised Credits</p>
           <p className="text-3xl font-black text-white mt-1">
-            {loadingStats ? '...' : `📈 ${(totalRaised ?? 0).toLocaleString()} credits`}
+            {loadingStats ? '...' : `\u{1F4C8} ${(totalRaised ?? 0).toLocaleString()} credits`}
           </p>
         </div>
       </div>
@@ -170,6 +179,12 @@ export default function WithdrawalsPage() {
                 placeholder="e.g. 500"
                 className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
               />
+              {/* #19: Insufficient credit warning */}
+              {hasInsufficientCredit && (
+                <p className="mt-1.5 text-xs text-red-500 font-semibold">
+                  You only have {(totalRaised ?? 0).toLocaleString()} raised credits available.
+                </p>
+              )}
             </div>
 
             <div>
@@ -222,13 +237,20 @@ export default function WithdrawalsPage() {
           </div>
 
           <div className="pt-4">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg transition disabled:opacity-50 cursor-pointer"
-            >
-              {submitting ? 'Submitting Request...' : 'Request Withdraw'}
-            </button>
+            {/* #19: Hide/Disable submit button when insufficient credit or below minimum */}
+            {hasInsufficientCredit ? (
+              <div className="w-full py-3.5 px-6 rounded-xl bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 font-bold text-center cursor-not-allowed">
+                Insufficient Raised Credits
+              </div>
+            ) : (
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg transition disabled:opacity-50 cursor-pointer"
+              >
+                {submitting ? 'Submitting Request...' : 'Request Withdraw'}
+              </button>
+            )}
           </div>
         </form>
       </div>
