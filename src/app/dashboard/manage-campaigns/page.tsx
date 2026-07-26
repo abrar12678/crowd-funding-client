@@ -13,6 +13,7 @@ export interface CampaignItem {
   fundingGoal: number;
   raisedAmount?: number;
   status?: string;
+  createdAt?: string;
 }
 
 export default function ManageCampaignsPage() {
@@ -20,22 +21,17 @@ export default function ManageCampaignsPage() {
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   useEffect(() => {
     const fetchCampaigns = async () => {
       const token = localStorage.getItem('access-token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+      if (!token) { setLoading(false); return; }
 
       try {
-        const response = await fetch(`${API_BASE}/api/campaigns/approved`, {
+        const response = await fetch(`${API_BASE}/api/admin/all-campaigns`, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
         });
 
         const data = await response.json();
@@ -52,11 +48,7 @@ export default function ManageCampaignsPage() {
       }
     };
 
-    if (user?.role === 'Admin') {
-      fetchCampaigns();
-    } else {
-      setLoading(false);
-    }
+    if (user?.role === 'Admin') { fetchCampaigns(); } else { setLoading(false); }
   }, [user]);
 
   // Security check: Admins only
@@ -66,9 +58,7 @@ export default function ManageCampaignsPage() {
         <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-2xl p-8 space-y-3">
           <span className="text-4xl">🚫</span>
           <h2 className="text-xl font-bold text-red-700 dark:text-red-300">Access Denied</h2>
-          <p className="text-sm text-red-600 dark:text-red-400">
-            Admins only. You do not have permission to manage campaigns.
-          </p>
+          <p className="text-sm text-red-600 dark:text-red-400">Admins only. You do not have permission to manage campaigns.</p>
         </div>
       </div>
     );
@@ -86,16 +76,12 @@ export default function ManageCampaignsPage() {
     try {
       const response = await fetch(`${API_BASE}/api/admin/delete-campaign/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        // Filter out deleted campaign from local state
         setCampaigns((prev) => prev.filter((item) => item._id !== id));
       } else {
         alert(data.error || 'Failed to delete campaign.');
@@ -108,21 +94,43 @@ export default function ManageCampaignsPage() {
     }
   };
 
+  const getStatusBadge = (status?: string) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'approved') return <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-full border border-emerald-200 dark:border-emerald-800">Approved</span>;
+    if (s === 'pending') return <span className="px-3 py-1 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-xs font-bold rounded-full border border-amber-200 dark:border-amber-800">Pending</span>;
+    if (s === 'rejected') return <span className="px-3 py-1 bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-xs font-bold rounded-full border border-red-200 dark:border-red-800">Rejected</span>;
+    if (s === 'suspended') return <span className="px-3 py-1 bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 text-xs font-bold rounded-full border border-purple-200 dark:border-purple-800">Suspended</span>;
+    return <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold rounded-full">{status || 'Unknown'}</span>;
+  };
+
+  const filteredCampaigns = filterStatus === 'all' ? campaigns : campaigns.filter((c) => (c.status || '').toLowerCase() === filterStatus);
+  const counts = { all: campaigns.length, pending: campaigns.filter((c) => (c.status || '').toLowerCase() === 'pending').length, approved: campaigns.filter((c) => (c.status || '').toLowerCase() === 'approved').length, rejected: campaigns.filter((c) => (c.status || '').toLowerCase() === 'rejected').length, suspended: campaigns.filter((c) => (c.status || '').toLowerCase() === 'suspended').length };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-            Manage Campaigns
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Overview of live campaigns. Deleting a campaign automatically refunds all backer credits.
-          </p>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Manage Campaigns</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Overview of all campaigns. Deleting a campaign automatically refunds all backer credits.</p>
+          </div>
+          <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-bold border border-indigo-200 dark:border-indigo-800">
+            Total: {campaigns.length}
+          </div>
         </div>
 
-        <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-bold border border-indigo-200 dark:border-indigo-800">
-          Active Campaigns: {campaigns.length}
+        {/* #26: Filter Tabs */}
+        <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+          {(['all', 'pending', 'approved', 'rejected', 'suspended'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setFilterStatus(s)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer ${filterStatus === s ? 'bg-indigo-600 text-white border-indigo-600 shadow' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+            >
+              {s.charAt(0).toUpperCase() + s.slice(1)} ({counts[s]})
+            </button>
+          ))}
         </div>
       </div>
 
@@ -131,10 +139,10 @@ export default function ManageCampaignsPage() {
           <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
           <p className="text-gray-600 dark:text-gray-400 font-medium">Loading...</p>
         </div>
-      ) : campaigns.length === 0 ? (
+      ) : filteredCampaigns.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 p-8 space-y-3">
           <span className="text-4xl">🚀</span>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">No campaigns found.</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">No {filterStatus !== 'all' ? filterStatus : ''} campaigns found.</h3>
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -145,34 +153,19 @@ export default function ManageCampaignsPage() {
                   <th className="py-4 px-6">Title</th>
                   <th className="py-4 px-6">Creator</th>
                   <th className="py-4 px-6">Status</th>
-                  <th className="py-4 px-6">Raised</th>
+                  <th className="py-4 px-6">Raised / Goal</th>
                   <th className="py-4 px-6 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-                {campaigns.map((item) => (
-                  <tr
-                    key={item._id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors"
-                  >
-                    <td className="py-4 px-6 font-semibold text-gray-900 dark:text-white max-w-xs truncate">
-                      {item.title}
-                    </td>
-
-                    <td className="py-4 px-6 text-gray-600 dark:text-gray-300">
-                      {item.creatorName || item.creatorEmail || 'Unknown'}
-                    </td>
-
-                    <td className="py-4 px-6">
-                      <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-full border border-emerald-200 dark:border-emerald-800">
-                        {item.status || 'Approved'}
-                      </span>
-                    </td>
-
+                {filteredCampaigns.map((item) => (
+                  <tr key={item._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+                    <td className="py-4 px-6 font-semibold text-gray-900 dark:text-white max-w-xs truncate">{item.title}</td>
+                    <td className="py-4 px-6 text-gray-600 dark:text-gray-300">{item.creatorName || item.creatorEmail || 'Unknown'}</td>
+                    <td className="py-4 px-6">{getStatusBadge(item.status)}</td>
                     <td className="py-4 px-6 font-extrabold text-emerald-600 dark:text-emerald-400">
                       ${(item.raisedAmount ?? 0).toLocaleString()} / ${item.fundingGoal?.toLocaleString()}
                     </td>
-
                     <td className="py-4 px-6 text-center whitespace-nowrap">
                       <button
                         onClick={() => handleDelete(item._id)}
